@@ -1,0 +1,124 @@
+---
+title: "In Class March 25th"
+format: html
+editor: visual
+---
+
+## Elements of Regression
+
+### Goal
+
+to partition variance in the outcome/response variable among different sources, i.e., into that explained by the regression model itself versus the left-over error or residual variance
+
+SSR \<- portion explained by our model
+
+SSE \<- combined error term of each of our predicted estimates from our observed values of y
+
+SSY = SSR + SSE
+
+regression is anaylysis of how varaince is partitioned
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+f <- "https://raw.githubusercontent.com/difiore/ada-datasets/refs/heads/main/zombies.csv"
+
+d <- read_csv(f, col_names = TRUE)
+head(d)
+```
+
+```{r}
+#Regression model with our zombie apocalupse survivor dataset 
+
+m <- lm(data = d, height ~ weight)
+summary (m)
+
+
+SSY <- sum((m$model$height - mean (m$model$height))^2)
+
+SSY
+
+#SSR = predicted height - mean height
+SSR <- sum((m$fitted.values - mean(m$model$height))^2)
+SSR
+
+#SSE = height - predicted height
+SSE <- sum((m$model$height - m$fitted.values) ^ 2)
+SSE
+
+#mean overall variance 
+MSY <- SSY/(nrow(d)-1)
+```
+
+Calculating the variance in each of the components also called mean square by dividing SSY, SSR, and SSE by its corresponding \# of degrees of freedom
+
+## Anova tables : Mean Square
+
+```{r}
+
+#mean overall variance 
+MSY <- SSY/(nrow(d)-1)
+
+#mean overall varaince 
+
+MSR <- SSR / (1)
+
+#mean reamining variance
+MSE <- SSE/(nrow(d) -1 -1 )
+
+#Fration ratio of explained to unexplained variance
+#high fratio regression explains it 
+
+fratio <-MSR/MSE
+
+#frratio is our test statistic 
+
+#p value - proportion of f distribution that lies between 0 and fratio value 
+
+pf( q = fratio, df1 = 1, df2 = 998, 
+    lower.tail = FALSE)
+```
+
+## Fratio
+
+asking r to return the upper tail , to the right of the f-ratio
+
+```{r}
+#Fration ratio of explained to unexplained variance
+#high fratio regression explains it 
+
+fratio <-MSR/MSE
+
+#frratio is our test statistic 
+
+#p value - proportion of f distribution that lies between 0 and fratio value 
+
+pf( q = fratio, df1 = 1, df2 = 998, 
+    lower.tail = FALSE)
+
+# the fratio is 2.646279e-258 very small 
+
+# or 
+1-pf(q = fratio, df1 = 1, df2 = 998)
+
+
+```
+
+### draw fratio 
+
+the proportion of the variance explained is high
+
+it is very unlikely that we would see an fratio that high by chance you can reject your null hypothesis
+
+```{r}
+mosaic::plotDist("f", df1 = 1, df2 = 998)
+```
+
+```{r}
+(rsq <-SSR/SSY)
+summary(m) # looks at multiple R - squared value 
+# 0.6931998 ~ 69.3 % our model does a really good job at explaining variation in y variable 
+
+anova(m)
+
+```

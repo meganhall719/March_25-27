@@ -117,8 +117,153 @@ mosaic::plotDist("f", df1 = 1, df2 = 998)
 ```{r}
 (rsq <-SSR/SSY)
 summary(m) # looks at multiple R - squared value 
+# r calculates this mmean squared some of squares, you can do it by hand but r does it to 
+
 # 0.6931998 ~ 69.3 % our model does a really good job at explaining variation in y variable 
 
+anova(m) # get out analysis of variance table 
+
+```
+
+## uncorrelated random data 
+
+no relation best estimate of x will be an average of y
+
+```{r}
+new_d <-tibble (x = rnorm (1000, mean = 100, sd = 25),
+                y = rnorm(1000, mean = 10, sd = 2))
+
+plot(new_d$x, new_d$y)
+m <- lm(y ~x, data = new_d)
+
+summary(m)
+```
+
+```{r}
+
+#SSY
+SSY <- sum((m$model$y - mean(m$model$y)) ^ 2 )
+
+#SSR
+SSR <- sum((m$fitted.values - mean(m$model$y)) ^2)
+
+#SSE
+
+SSE <- sum((m$model$y - m$fitted.values) ^ 2 )
+
+#mean overall variance 
+MSY <- SSY/(nrow(d)-1)
+
+#mean overall varaince 
+
+MSR <- SSR / (1)
+
+#mean reamining variance
+MSE <- SSE/(nrow(d) -1 -1 )
+
+fratio <- MSR/ MSE
+fratio
+# 2.17473
+
 anova(m)
+
+```
+
+## Model Checking : Four conditions for inference 
+
+### L 
+
+linearlity of relationshiib between varialbes
+
+### i 
+
+indepencencs of residulats
+
+### N
+
+normality of residuals
+
+look at histogram of residuals should be normally distributed and centered around 0
+
+### E 
+
+equality of variance (homoscedasticity ) of the resitduals
+
+across range of x what is the variance of x
+
+#### L, N, E
+
+can be evaluated by residual anaylysis
+
+### I 
+
+depends on how data were collected
+
+## how to check of LN
+
+we can plot our ersponse variable versus our predcictor
+
+we can plot a histogram of residulas
+
+we can plot residulats in relation of predictor
+
+use plot function
+
+```{r}
+library(tidyverse)
+library(ggplot2)
+f <- "https://raw.githubusercontent.com/difiore/ada-datasets/refs/heads/main/zombies.csv"
+
+d <- read_csv(f, col_names = TRUE)
+head(d)
+
+m <- lm(data = d, height ~ weight)
+summary (m)
+
+m <- lm (data = d, height ~weight)
+
+par(mfrow = c(2,2))
+
+plot(m)
+
+
+```
+
+### Coding Challenge - Exercise 9 
+
+```{r}
+
+library(tidyverse)
+ 
+f <- "https://raw.githubusercontent.com/difiore/ada-datasets/refs/heads/main/KamilarAndCooperData.csv"
+d <- read_csv(f, col_names = TRUE)
+
+#plot lifespan veruss female body mass
+lifespan_model <- lm(MaxLongevity_m ~ Body_mass_female_mean, data = d)
+
+plot(lifespan_model)
+
+#In the linear regression model lm(MaxLongevity_m ~ Body_mass_female_mean, data = d), you're examining how female body mass (x) might predict or relate to maximum lifespan (y).
+```
+
+## Categorical Predictors
+
+height as a function of sex, eye color, two things (male female or blue, brown etc.)
+
+behind the scenes r is making k discrete groups as "dummy" values for our categorical
+
+### Data set 
+
+```{r}
+library(dplyr)
+f <- "https://raw.githubusercontent.com/difiore/ada-datasets/refs/heads/main/AVONETdataset1.csv"
+d <- read_csv(f, col_names = TRUE)
+head (d)
+
+d <- d |>
+  select("Species1", "Family1", "Order1", "Beak.Width", "Beak.Depth")
+
+# which values are categorical 
+   # 
 
 ```

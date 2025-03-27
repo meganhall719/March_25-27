@@ -104,7 +104,7 @@ pf( q = fratio, df1 = 1, df2 = 998,
 
 ```
 
-### draw fratio 
+### draw fratio
 
 the proportion of the variance explained is high
 
@@ -125,7 +125,7 @@ anova(m) # get out analysis of variance table
 
 ```
 
-## uncorrelated random data 
+## uncorrelated random data
 
 no relation best estimate of x will be an average of y
 
@@ -169,13 +169,13 @@ anova(m)
 
 ```
 
-## Model Checking : Four conditions for inference 
+## Model Checking : Four conditions for inference
 
-### L 
+### L
 
 linearlity of relationshiib between varialbes
 
-### i 
+### i
 
 indepencencs of residulats
 
@@ -185,7 +185,7 @@ normality of residuals
 
 look at histogram of residuals should be normally distributed and centered around 0
 
-### E 
+### E
 
 equality of variance (homoscedasticity ) of the resitduals
 
@@ -195,7 +195,7 @@ across range of x what is the variance of x
 
 can be evaluated by residual anaylysis
 
-### I 
+### I
 
 depends on how data were collected
 
@@ -229,7 +229,7 @@ plot(m)
 
 ```
 
-### Coding Challenge - Exercise 9 
+### Coding Challenge - Exercise 9
 
 ```{r}
 
@@ -252,7 +252,7 @@ height as a function of sex, eye color, two things (male female or blue, brown e
 
 behind the scenes r is making k discrete groups as "dummy" values for our categorical
 
-### Data set 
+### Data set
 
 ```{r}
 library(dplyr)
@@ -267,3 +267,151 @@ d <- d |>
    # 
 
 ```
+
+# March 27 
+
+## Regression with Categorical Predictors 
+
+### Categorical data 
+
+```{r}
+
+
+
+library(dplyr)
+library(tidyverse)
+library(jtools)
+f <- "https://raw.githubusercontent.com/difiore/ada-datasets/refs/heads/main/AVONETdataset1.csv"
+d <- read_csv(f, col_names = TRUE)
+head (d)
+
+d <- d |>
+  select("Species1", "Family1", "Order1", "Beak.Width", "Beak.Depth", "Tarsus.Length", "Wing.Length", "Tail.Lenght", "Mass", "Habitat")
+
+# which values are categorical 
+   # 
+```
+
+```{r}
+ggplot(data = d |> drop_na(Trophic.Level), 
+       aes(x = Trophic.Level, y = log(Mass)))+
+  geom_boxplot()+
+  geom_jitter()
+ggplot(data = d |> drop_na(Migration), 
+       aes(x = Migration, y = log(Mass)))+
+  geom_boxplot()+
+  geom_jitter()
+```
+
+```{r}
+ggplot(data = d |> drop_na(Habitat), aes(x = Habitat, y = log(Mass)))+
+  geom_boxplot() + geom_jitter()
+```
+
+Run a linear modes for Anova analysis look at results
+
+migration is stored
+
+```{r}
+glimpse(d)
+# have to make migration into categorrical variables by using as.factor function 
+
+# or mutate migration variable
+
+migration1<- lm(log(Mass) ~ Trophic.Level, data = d)
+migration2 <-lm(log(Mass)~ as.factor(Migration), data = d)
+summary (migration1)
+summary(migration2)
+
+```
+
+```{r}
+ggplot(data = d |> drop_na(Trophic.Level), aes(x = Trophic.Level, y = log(Mass))) + geom_boxplot()
+```
+
+Carnivore is the baseline level that everything is compared to it is telling you how much higher the mean is for herbivores vs. the mean for carnivores.
+
+We can re-level what the base level is but r automatically sorts what the base level is via alphabetical order
+
+T-value (estimate / standard error)
+
+probability of seeing expectation, chance of seeing that by chance
+
+via plot scavengers are statistically different from body size of carnivores
+
+statistical difference of being an herbivore and being a carnivore
+
+very small p values
+
+```{r}
+d <- d |> mutate(Trophic.Level = relevel(as.factor(Trophic.Level), ref = "Herbivore"))
+
+#relevel again
+
+d <- d |> mutate(Trophic.Level = relevel(as.factor(Trophic.Level), ref = "Omnivore"))
+
+migration1<- lm(log(Mass) ~ Trophic.Level, data = d)
+migration2 <-lm(log(Mass)~ as.factor(Migration), data = d)
+summary (migration1)
+summary(migration2)
+```
+
+F-statistic Degrees of freedom\
+Calculating the p value of the overall model
+
+is body mass associated with trophic level, not focusing on anyone predictor
+
+```{r}
+pf(78.42, df1 = 3, df2 = 11000, lower.tail = FALSE)
+```
+
+### Then we want to know if there as any categorical affect
+
+### Post-Hoc Tests
+
+after finding a significant omnibus F statistic in an ANOVA , we can test, post-hoc, what group means are different from one another using pairwise t tests with an appropriate p value correction or a turkey honest significant differences test
+
+```{r}
+# comparing body mass and trophic level 
+# carniovres and 
+(pairwise.t.test(log(d$Mass), d$Trophic.Level, p.adj = "bonferroni"))
+m1 <- aov(log(Mass) ~ Trophic.Level, data = d)
+
+
+(posthoc <- TukeyHSD(m1, which = "Trophic.Level", conf.level = .95))
+
+```
+
+# permutation approach to inference in ANOVA 
+
+short cut to pull out f statistic
+
+```{r}
+
+
+original.F <- aov(log(Mass) ~ Trophic.Level, data = d) |>
+  broom::tidy() |>
+  filter(term == "Trophic.Level")
+original.F #F statistic  and p value for omnibus F test 
+```
+
+### Now generate permutation statistic using infer package
+
+```{r}
+library(infer)
+d <- d |> mutate(logMass = log(Mass))
+permuted.F <- d |>
+  specify(logMass ~ Trophic.Level)|>
+  hypothesise(null = "independence")|>
+  generate(reps = 1000, type = "permute")|>
+  calculate(stat = "F")
+
+visualize(permuted.F) +
+            shade_p_value(obs_stat =  original.F$statistic, direction = "greater")
+```
+
+# Multi-factor ANOVA (e.g., 2-way ANOVA)
+
+sometimes we are interested in more than 1 predictor
+
+example Trophic level and migration
